@@ -4,23 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Labis Laundry Invoice</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; padding: 20px; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; padding: 20px;}
   .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);}
-  h1 { text-align: center; color: #3498db;}
+  h1 { text-align: center; color: #3498db; }
   input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ddd; }
   .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
-  .btn-print { background: #2c3e50; color: white; }
-  .btn-reset { background: #e74c3c; color: white; }
-  .btn-save { background: #2ecc71; color: white; }
+  .btn-form { background: #2ecc71; color: white; padding: 10px; border: none; cursor: pointer; border-radius: 6px; }
 </style>
 </head>
 <body>
+
 <div class="container">
   <h1>Labis Laundry Invoice</h1>
 
-  <!-- Customer Info -->
   <label>Customer Name</label>
   <input type="text" id="customer-name" placeholder="Enter customer name">
 
@@ -30,138 +27,31 @@
   <label>Address</label>
   <textarea id="customer-address" rows="2" placeholder="Enter customer address"></textarea>
 
-  <!-- Items -->
-  <label>Garment Type</label>
-  <select id="item-type">
-    <option value="">Select garment type</option>
-    <option value="Shirt">Shirt</option>
-    <option value="Trouser">Trouser</option>
-    <option value="Dress">Dress</option>
-    <option value="Skirt">Skirt</option>
-    <option value="Jacket">Jacket</option>
-    <option value="Bed Sheet">Bed Sheet</option>
-    <option value="Curtain">Curtain</option>
-    <option value="Other">Other</option>
-  </select>
-
-  <label>Description</label>
-  <input type="text" id="item-description" placeholder="E.g., Color, fabric">
-
-  <label>Quantity</label>
-  <input type="number" id="item-quantity" min="1" value="1">
-
-  <label>Price per Item (Birr)</label>
-  <input type="number" id="item-price" min="0" step="0.01">
-
-  <label>Payment Status</label>
-  <div>
-    <label><input type="radio" name="payment-status" value="PAID" checked> PAID</label>
-    <label><input type="radio" name="payment-status" value="UNPAID"> UNPAID</label>
-  </div>
-
-  <button id="add-item-btn"><i class="fas fa-plus"></i> Add Item</button>
-
-  <!-- Invoice Table -->
-  <table border="1" width="100%" style="margin-top:20px; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th>Description</th>
-        <th>Qty</th>
-        <th>Price</th>
-        <th>Total</th>
-      </tr>
-    </thead>
-    <tbody id="invoice-items-body">
-      <tr><td colspan="4" style="text-align:center;">No items added yet</td></tr>
-    </tbody>
-  </table>
-
-  <!-- Totals -->
-  <div style="margin-top:15px;">
-    <div>Subtotal: <span id="subtotal">0.00</span> Birr</div>
-    <div>Tax (0%): <span id="tax">0.00</span> Birr</div>
-    <div>Grand Total: <span id="total">0.00</span> Birr</div>
-  </div>
+  <label>Pickup Date</label>
+  <input type="date" id="pickup-date">
 
   <!-- Action Buttons -->
   <div class="action-buttons">
-    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Receipt</button>
-    <button class="btn-reset" onclick="resetForm()"><i class="fas fa-redo"></i> New Invoice</button>
-    <button class="btn-save" onclick="sendToGoogleSheet()"><i class="fas fa-save"></i> Save to Google Sheets</button>
+    <button class="btn-form" onclick="openGoogleForm()">Save to Google Sheets</button>
   </div>
+
+  <h3 style="margin-top:30px;">Or Fill Form Directly Below:</h3>
+
+  <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSfC2vASgowDuyv2lP_mWUN6vCcDZUs9FcW8bSwiOQOzxYmYMg/viewform?usp=dialog" 
+          width="100%" height="600px" style="border:none;"></iframe>
 </div>
 
 <script>
-const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; https://script.google.com/macros/s/AKfycbx880XixrSPZOyKnZR9rEQVyI0BHEZ8EyUU69ryszOSegb_PmV6nwcj7iW7hpwpstUN9g/exec Gali URL-kaaga Google Apps Script
+function openGoogleForm() {
+    const customerName = encodeURIComponent(document.getElementById('customer-name').value);
+    const customerPhone = encodeURIComponent(document.getElementById('customer-phone').value);
+    const customerAddress = encodeURIComponent(document.getElementById('customer-address').value);
+    const pickupDate = encodeURIComponent(document.getElementById('pickup-date').value);
 
-// Add Item
-document.getElementById('add-item-btn').addEventListener('click', function(){
-  const type = document.getElementById('item-type').value;
-  const desc = document.getElementById('item-description').value;
-  const qty = parseFloat(document.getElementById('item-quantity').value);
-  const price = parseFloat(document.getElementById('item-price').value);
-  if(!type||!desc||!qty||isNaN(price)){ alert('Fill all fields'); return; }
-  const total = (qty*price).toFixed(2);
-
-  const invoiceBody = document.getElementById('invoice-items-body');
-  if(invoiceBody.rows.length ===1 && invoiceBody.rows[0].cells[0].textContent.includes('No items')) invoiceBody.innerHTML='';
-  const row = invoiceBody.insertRow();
-  row.innerHTML = `<td>${type} - ${desc}</td><td>${qty}</td><td>${price.toFixed(2)}</td><td>${total}</td>`;
-
-  updateTotals();
-  document.getElementById('item-type').value='';
-  document.getElementById('item-description').value='';
-  document.getElementById('item-quantity').value='1';
-  document.getElementById('item-price').value='';
-});
-
-// Update totals
-function updateTotals(){
-  let subtotal=0;
-  Array.from(document.querySelectorAll('#invoice-items-body tr')).forEach(r=>{
-    const t=parseFloat(r.cells[3]?.textContent)||0;
-    subtotal+=t;
-  });
-  document.getElementById('subtotal').textContent=subtotal.toFixed(2);
-  document.getElementById('tax').textContent=(subtotal*0).toFixed(2);
-  document.getElementById('total').textContent=subtotal.toFixed(2);
-}
-
-// Reset form
-function resetForm(){
-  if(confirm('Create new invoice?')) location.reload();
-}
-
-// Send to Google Sheets
-function sendToGoogleSheet(){
-  const invoiceNumber = 'INV-'+Date.now();
-  const customerName = document.getElementById('customer-name').value;
-  const customerPhone = document.getElementById('customer-phone').value;
-  const customerAddress = document.getElementById('customer-address').value;
-  const paymentStatus = document.querySelector('input[name="payment-status"]:checked').value;
-  const subtotal = parseFloat(document.getElementById('subtotal').textContent)||0;
-  const tax = parseFloat(document.getElementById('tax').textContent)||0;
-  const total = parseFloat(document.getElementById('total').textContent)||0;
-
-  const items = Array.from(document.querySelectorAll('#invoice-items-body tr')).map(r=>{
-    const cells=r.querySelectorAll('td');
-    return cells.length>=4 ? {description:cells[0].textContent, qty:cells[1].textContent, price:cells[2].textContent, total:cells[3].textContent} : null;
-  }).filter(x=>x);
-
-  const payload={invoiceNumber, customerName, customerPhone, customerAddress, items, subtotal, tax, total, paymentStatus};
-
-  fetch(WEB_APP_URL,{
-    method:'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  })
-  .then(res=>res.json())
-  .then(data=>{
-    if(data.status==='success') alert('Xogta waa la diiwaangeliyey Google Sheets!');
-    else alert('Error: '+data.message);
-  })
-  .catch(err=>alert('Network error: '+err));
+    // Open Google Form in new tab
+    window.open('https://docs.google.com/forms/d/e/1FAIpQLSfC2vASgowDuyv2lP_mWUN6vCcDZUs9FcW8bSwiOQOzxYmYMg/viewform?usp=pp_url&entry.XXXX=' + customerName + '&entry.YYYY=' + customerPhone + '&entry.ZZZZ=' + customerAddress + '&entry.AAAA=' + pickupDate, '_blank');
 }
 </script>
+
 </body>
-    </html>
+</html>
