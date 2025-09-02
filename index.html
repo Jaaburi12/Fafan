@@ -5,12 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Labis Laundry Invoice</title>
 <style>
-  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; padding: 20px;}
-  .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);}
-  h1 { text-align: center; color: #3498db; }
-  input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ddd; }
-  .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
-  .btn-form { background: #2ecc71; color: white; padding: 10px; border: none; cursor: pointer; border-radius: 6px; }
+  body { font-family: 'Segoe UI', sans-serif; padding: 20px; background: #f5f7fa;}
+  .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);}
+  input, textarea, select, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ddd; }
+  .receipt { display: none; margin-top: 20px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: #fafafa; }
+  .btn-submit { background: #2ecc71; color: white; border: none; cursor: pointer; padding: 10px; border-radius: 6px; }
+  .btn-print { background: #3498db; color: white; border: none; cursor: pointer; padding: 10px; border-radius: 6px; margin-top: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
 </style>
 </head>
 <body>
@@ -19,39 +21,101 @@
   <h1>Labis Laundry Invoice</h1>
 
   <label>Customer Name</label>
-  <input type="text" id="customer-name" placeholder="Enter customer name">
+  <input type="text" id="customer-name">
 
   <label>Phone Number</label>
-  <input type="text" id="customer-phone" placeholder="Enter phone number">
+  <input type="text" id="customer-phone">
 
   <label>Address</label>
-  <textarea id="customer-address" rows="2" placeholder="Enter customer address"></textarea>
+  <textarea id="customer-address" rows="2"></textarea>
 
   <label>Pickup Date</label>
   <input type="date" id="pickup-date">
 
-  <!-- Action Buttons -->
-  <div class="action-buttons">
-    <button class="btn-form" onclick="openGoogleForm()">Save to Google Sheets</button>
+  <h3>Add Item</h3>
+  <label>Item Description</label>
+  <input type="text" id="item-description">
+  <label>Quantity</label>
+  <input type="number" id="item-quantity" min="1" value="1">
+  <label>Price per Item</label>
+  <input type="number" id="item-price" min="0" step="0.01">
+  <button onclick="addItem()">Add Item</button>
+
+  <table id="items-table">
+    <thead>
+      <tr><th>Description</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button class="btn-submit" onclick="generateReceipt()">Generate Receipt</button>
+
+  <div class="receipt" id="receipt">
+    <h2>LABIS LAUNDRY RECEIPT</h2>
+    <p id="r-customer"></p>
+    <p id="r-phone"></p>
+    <p id="r-address"></p>
+    <p id="r-pickup"></p>
+    <table id="r-items-table">
+      <thead><tr><th>Description</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p id="r-subtotal"></p>
+    <p id="r-total"></p>
+    <button class="btn-print" onclick="printReceipt()">Print Receipt</button>
   </div>
-
-  <h3 style="margin-top:30px;">Or Fill Form Directly Below:</h3>
-
-  <iframe src="https://docs.google.com/forms/d/e/1FAIpQLSfC2vASgowDuyv2lP_mWUN6vCcDZUs9FcW8bSwiOQOzxYmYMg/viewform?usp=dialog" 
-          width="100%" height="600px" style="border:none;"></iframe>
 </div>
 
 <script>
-function openGoogleForm() {
-    const customerName = encodeURIComponent(document.getElementById('customer-name').value);
-    const customerPhone = encodeURIComponent(document.getElementById('customer-phone').value);
-    const customerAddress = encodeURIComponent(document.getElementById('customer-address').value);
-    const pickupDate = encodeURIComponent(document.getElementById('pickup-date').value);
+let items = [];
 
-    // Open Google Form in new tab
-    window.open('https://docs.google.com/forms/d/e/1FAIpQLSfC2vASgowDuyv2lP_mWUN6vCcDZUs9FcW8bSwiOQOzxYmYMg/viewform?usp=pp_url&entry.XXXX=' + customerName + '&entry.YYYY=' + customerPhone + '&entry.ZZZZ=' + customerAddress + '&entry.AAAA=' + pickupDate, '_blank');
+function addItem() {
+  const desc = document.getElementById('item-description').value;
+  const qty = parseFloat(document.getElementById('item-quantity').value);
+  const price = parseFloat(document.getElementById('item-price').value);
+  if(!desc || !qty || isNaN(price)) { alert('Fill all fields'); return; }
+  const total = qty * price;
+  items.push({desc, qty, price, total});
+
+  const tbody = document.querySelector('#items-table tbody');
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${desc}</td><td>${qty}</td><td>${price.toFixed(2)}</td><td>${total.toFixed(2)}</td>`;
+  tbody.appendChild(row);
+
+  document.getElementById('item-description').value='';
+  document.getElementById('item-quantity').value='1';
+  document.getElementById('item-price').value='';
+}
+
+function generateReceipt() {
+  if(items.length === 0) { alert('Add at least one item'); return; }
+  document.getElementById('r-customer').textContent = 'Customer: ' + document.getElementById('customer-name').value;
+  document.getElementById('r-phone').textContent = 'Phone: ' + document.getElementById('customer-phone').value;
+  document.getElementById('r-address').textContent = 'Address: ' + document.getElementById('customer-address').value;
+  document.getElementById('r-pickup').textContent = 'Pickup Date: ' + document.getElementById('pickup-date').value;
+
+  const tbody = document.querySelector('#r-items-table tbody');
+  tbody.innerHTML = '';
+  let subtotal = 0;
+  items.forEach(i=>{
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${i.desc}</td><td>${i.qty}</td><td>${i.price.toFixed(2)}</td><td>${i.total.toFixed(2)}</td>`;
+    tbody.appendChild(row);
+    subtotal += i.total;
+  });
+  document.getElementById('r-subtotal').textContent = 'Subtotal: ' + subtotal.toFixed(2) + ' Birr';
+  document.getElementById('r-total').textContent = 'Grand Total: ' + subtotal.toFixed(2) + ' Birr';
+  document.getElementById('receipt').style.display='block';
+}
+
+function printReceipt() {
+  const printContents = document.getElementById('receipt').innerHTML;
+  const originalContents = document.body.innerHTML;
+  document.body.innerHTML = printContents;
+  window.print();
+  document.body.innerHTML = originalContents;
+  location.reload(); // refresh page
 }
 </script>
-
 </body>
 </html>
