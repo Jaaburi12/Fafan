@@ -1,193 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Laam</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to bottom, #0f0f0f, #1e1e1e);
-      color: #f5f5f5;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 30px 20px;
-    }
-
-    h1 {
-      font-size: 3rem;
-      color: gold;
-      text-shadow: 2px 2px 10px #ffaa00;
-      margin-bottom: 20px;
-    }
-
-    .top-widget {
-      width: 100%;
-      max-width: 1000px;
-      margin-bottom: 20px;
-      overflow-x: auto;
-    }
-
-    .description {
-      max-width: 800px;
-      background-color: rgba(255, 255, 255, 0.05);
-      border-left: 5px solid gold;
-      padding: 25px 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
-      line-height: 1.8;
-      margin-bottom: 30px;
-    }
-
-    .xlm-widget {
-      width: 100%;
-      max-width: 1000px;
-      margin: 0 auto 20px auto;
-      text-align: center;
-    }
-
-    .explorer {
-      margin-top: 10px;
-      text-align: center;
-      margin-bottom: 15px;
-    }
-
-    .explorer a {
-      background-color: gold;
-      color: #000;
-      font-weight: bold;
-      text-decoration: none;
-      padding: 12px 24px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-      display: inline-block;
-      transition: background-color 0.3s ease;
-    }
-
-    .explorer a:hover {
-      background-color: #ffd700;
-    }
-
-    .social-buttons {
-      display: flex;
-      flex-direction: row;
-      gap: 15px;
-      justify-content: center;
-      margin-top: 10px;
-      margin-bottom: 40px;
-      flex-wrap: wrap;
-    }
-
-    .social-buttons a {
-      text-decoration: none;
-      padding: 12px 20px;
-      border-radius: 8px;
-      font-weight: bold;
-      color: #fff;
-      background-color: #0077ff;
-      box-shadow: 0 0 10px rgba(0, 119, 255, 0.3);
-      transition: background-color 0.3s ease;
-    }
-
-    .social-buttons a:hover {
-      background-color: #005dc1;
-    }
-
-    .social-buttons a.instagram {
-      background-color: #E1306C;
-    }
-
-    .social-buttons a.instagram:hover {
-      background-color: #b32154;
-    }
-
-    .social-buttons a.youtube {
-      background-color: #FF0000;
-    }
-
-    .social-buttons a.youtube:hover {
-      background-color: #cc0000;
-    }
-
-    @media (max-width: 600px) {
-      h1 {
-        font-size: 2rem;
-      }
-
-      .description {
-        padding: 15px 20px;
-      }
-
-      .social-buttons {
-        flex-direction: column;
-        align-items: center;
-      }
-    }
-  </style>
-
-  <!-- LiveCoinWatch Widget Script -->
-  <script defer src="https://www.livecoinwatch.com/static/lcw-widget.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labis Laundry Invoice</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f7fa; padding: 20px; }
+  .container { max-width: 900px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);}
+  h1 { text-align: center; color: #3498db;}
+  input, select, textarea, button { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #ddd; }
+  .action-buttons { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-print { background: #2c3e50; color: white; }
+  .btn-reset { background: #e74c3c; color: white; }
+  .btn-save { background: #2ecc71; color: white; }
+</style>
 </head>
 <body>
+<div class="container">
+  <h1>Labis Laundry Invoice</h1>
 
-  <!-- Title -->
-  <h1>Laam</h1>
+  <!-- Customer Info -->
+  <label>Customer Name</label>
+  <input type="text" id="customer-name" placeholder="Enter customer name">
 
-  <!-- Top Marquee Widget -->
-  <div class="top-widget">
-    <div class="livecoinwatch-widget-5"
-         lcw-base="USD"
-         lcw-color-tx="#ffffff"
-         lcw-marquee-1="coins"
-         lcw-marquee-2="none"
-         lcw-marquee-items="10">
-    </div>
+  <label>Phone Number</label>
+  <input type="text" id="customer-phone" placeholder="Enter phone number">
+
+  <label>Address</label>
+  <textarea id="customer-address" rows="2" placeholder="Enter customer address"></textarea>
+
+  <!-- Items -->
+  <label>Garment Type</label>
+  <select id="item-type">
+    <option value="">Select garment type</option>
+    <option value="Shirt">Shirt</option>
+    <option value="Trouser">Trouser</option>
+    <option value="Dress">Dress</option>
+    <option value="Skirt">Skirt</option>
+    <option value="Jacket">Jacket</option>
+    <option value="Bed Sheet">Bed Sheet</option>
+    <option value="Curtain">Curtain</option>
+    <option value="Other">Other</option>
+  </select>
+
+  <label>Description</label>
+  <input type="text" id="item-description" placeholder="E.g., Color, fabric">
+
+  <label>Quantity</label>
+  <input type="number" id="item-quantity" min="1" value="1">
+
+  <label>Price per Item (Birr)</label>
+  <input type="number" id="item-price" min="0" step="0.01">
+
+  <label>Payment Status</label>
+  <div>
+    <label><input type="radio" name="payment-status" value="PAID" checked> PAID</label>
+    <label><input type="radio" name="payment-status" value="UNPAID"> UNPAID</label>
   </div>
 
-  <!-- Token Description -->
-  <div class="description">
-    <p>
-      <strong>Laam Coin</strong> is a native token built on <strong>Stellar</strong>, designed to be a modern solution for digital currency.
-      It has a <strong>fixed max supply of 1,335,577 LAAM</strong> — minted only once to preserve scarcity and long-term value.
-    </p>
+  <button id="add-item-btn"><i class="fas fa-plus"></i> Add Item</button>
 
-    <p>
-      Laam is an open project aimed at supporting real-world use cases such as property sales, vehicle rentals, and community-based commerce.
-      It can be easily added to popular wallets by creating a <em>trustline</em>, including <strong>Lobstr</strong>, <strong>Solar</strong>, and <strong>Freighter</strong>.
-    </p>
+  <!-- Invoice Table -->
+  <table border="1" width="100%" style="margin-top:20px; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody id="invoice-items-body">
+      <tr><td colspan="4" style="text-align:center;">No items added yet</td></tr>
+    </tbody>
+  </table>
 
-    <p>
-      The token is designed to be secure, non-inflationary, and fully tradable — with no need for a liquidity pool.
-    </p>
+  <!-- Totals -->
+  <div style="margin-top:15px;">
+    <div>Subtotal: <span id="subtotal">0.00</span> Birr</div>
+    <div>Tax (0%): <span id="tax">0.00</span> Birr</div>
+    <div>Grand Total: <span id="total">0.00</span> Birr</div>
   </div>
 
-  <!-- XLM Widget (Centered Below Description) -->
-  <div class="xlm-widget">
-    <div class="livecoinwatch-widget-6"
-         lcw-coin="XLM"
-         lcw-base="USD"
-         lcw-period="d"
-         lcw-color-tx="#ffffff"
-         lcw-color-bg="#505153"
-         lcw-border-w="0">
-    </div>
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Receipt</button>
+    <button class="btn-reset" onclick="resetForm()"><i class="fas fa-redo"></i> New Invoice</button>
+    <button class="btn-save" onclick="sendToGoogleSheet()"><i class="fas fa-save"></i> Save to Google Sheets</button>
   </div>
+</div>
 
-  <!-- Explorer Button -->
-  <div class="explorer">
-    <a href="https://stellar.expert/explorer/public/asset/Laam-GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64" target="_blank">
-      View Laam on Stellar Explorer
-    </a>
-  </div>
+<script>
+const WEB_APP_URL = "YOUR_WEB_APP_URL_HERE"; https://script.google.com/macros/s/AKfycbx880XixrSPZOyKnZR9rEQVyI0BHEZ8EyUU69ryszOSegb_PmV6nwcj7iW7hpwpstUN9g/exec Gali URL-kaaga Google Apps Script
 
-  <!-- Social Buttons Side by Side -->
-  <div class="social-buttons">
-    <a href="https://t.me/laamcoin" target="_blank">Telegram</a>
-    <a href="https://www.instagram.com/laamcoin" class="instagram" target="_blank">Instagram</a>
-    <a href="https://youtube.com/@laamcoin" class="youtube" target="_blank">YouTube</a>
-  </div>
+// Add Item
+document.getElementById('add-item-btn').addEventListener('click', function(){
+  const type = document.getElementById('item-type').value;
+  const desc = document.getElementById('item-description').value;
+  const qty = parseFloat(document.getElementById('item-quantity').value);
+  const price = parseFloat(document.getElementById('item-price').value);
+  if(!type||!desc||!qty||isNaN(price)){ alert('Fill all fields'); return; }
+  const total = (qty*price).toFixed(2);
 
+  const invoiceBody = document.getElementById('invoice-items-body');
+  if(invoiceBody.rows.length ===1 && invoiceBody.rows[0].cells[0].textContent.includes('No items')) invoiceBody.innerHTML='';
+  const row = invoiceBody.insertRow();
+  row.innerHTML = `<td>${type} - ${desc}</td><td>${qty}</td><td>${price.toFixed(2)}</td><td>${total}</td>`;
+
+  updateTotals();
+  document.getElementById('item-type').value='';
+  document.getElementById('item-description').value='';
+  document.getElementById('item-quantity').value='1';
+  document.getElementById('item-price').value='';
+});
+
+// Update totals
+function updateTotals(){
+  let subtotal=0;
+  Array.from(document.querySelectorAll('#invoice-items-body tr')).forEach(r=>{
+    const t=parseFloat(r.cells[3]?.textContent)||0;
+    subtotal+=t;
+  });
+  document.getElementById('subtotal').textContent=subtotal.toFixed(2);
+  document.getElementById('tax').textContent=(subtotal*0).toFixed(2);
+  document.getElementById('total').textContent=subtotal.toFixed(2);
+}
+
+// Reset form
+function resetForm(){
+  if(confirm('Create new invoice?')) location.reload();
+}
+
+// Send to Google Sheets
+function sendToGoogleSheet(){
+  const invoiceNumber = 'INV-'+Date.now();
+  const customerName = document.getElementById('customer-name').value;
+  const customerPhone = document.getElementById('customer-phone').value;
+  const customerAddress = document.getElementById('customer-address').value;
+  const paymentStatus = document.querySelector('input[name="payment-status"]:checked').value;
+  const subtotal = parseFloat(document.getElementById('subtotal').textContent)||0;
+  const tax = parseFloat(document.getElementById('tax').textContent)||0;
+  const total = parseFloat(document.getElementById('total').textContent)||0;
+
+  const items = Array.from(document.querySelectorAll('#invoice-items-body tr')).map(r=>{
+    const cells=r.querySelectorAll('td');
+    return cells.length>=4 ? {description:cells[0].textContent, qty:cells[1].textContent, price:cells[2].textContent, total:cells[3].textContent} : null;
+  }).filter(x=>x);
+
+  const payload={invoiceNumber, customerName, customerPhone, customerAddress, items, subtotal, tax, total, paymentStatus};
+
+  fetch(WEB_APP_URL,{
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(res=>res.json())
+  .then(data=>{
+    if(data.status==='success') alert('Xogta waa la diiwaangeliyey Google Sheets!');
+    else alert('Error: '+data.message);
+  })
+  .catch(err=>alert('Network error: '+err));
+}
+</script>
 </body>
-</html>
+    </html>
