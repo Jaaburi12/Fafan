@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ethiopian Services Hub — Full Auth Gate</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body, html { margin:0; padding:0; font-family:Segoe UI, sans-serif; }
+
+    /* Fullscreen Auth Gate */
+    #authScreen {
+      position:fixed; inset:0; background:linear-gradient(135deg,#2d5b7c,#3a7bab);
+      display:flex; align-items:center; justify-content:center;
+      z-index:2000; color:white; flex-direction:column; gap:20px;
+    }
+    #authBox {
+      background:white; color:#333; padding:30px; border-radius:12px;
+      width:100%; max-width:400px; box-shadow:0 4px 14px rgba(0,0,0,0.3);
+    }
+    #authBox h2 { text-align:center; margin-bottom:20px; color:#2d5b7c; }
+    .form-group { margin-bottom:15px; }
+    .form-group label { display:block; margin-bottom:6px; font-weight:600; }
+    .form-group input, .form-group select {
+      width:100%; padding:10px; border:1px solid #ccc; border-radius:6px;
+    }
+    .btn { display:block; width:100%; padding:10px; border:none; border-radius:6px;
+           margin-top:8px; font-weight:700; cursor:pointer; }
+    .btn-primary { background:#2d5b7c; color:white; }
+    .btn-accent { background:#27ae60; color:white; }
+    .toggleLink { margin-top:12px; text-align:center; cursor:pointer; color:#2d5b7c; font-size:14px; }
+    .hidden { display:none; }
+
+    /* App content placeholder */
+    #appContent { display:none; padding:20px; }
+  </style>
+</head>
+<body>
+  <!-- Fullscreen auth screen -->
+  <div id="authScreen">
+    <div id="authBox">
+      <h2 id="authTitle">Login</h2>
+      <div id="loginForm">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="loginPassword">
+        </div>
+        <button class="btn btn-primary" id="doLogin">Login</button>
+        <div class="toggleLink" id="showRegister">Don't have account? Register</div>
+      </div>
+
+      <div id="registerForm" class="hidden">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="regName">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail">
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="regPassword">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="regRole">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button class="btn btn-accent" id="doRegister">Register</button>
+        <div class="toggleLink" id="showLogin">Already have account? Login</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- App Content -->
+  <div id="appContent">
+    <h1 style="color:#2d5b7c;">Ethiopian Services Hub</h1>
+    <p>Halkan waxaa ku jira wizard-ka adeegyada iyo admin panel (waxaan kusoo dari doonaa dhammaan content-kii hore sida wizard, my bookings, admin tables...)</p>
+  </div>
+
+  <script>
+    const storage = {
+      get(k,f){ try{return JSON.parse(localStorage.getItem(k))??f}catch{return f} },
+      set(k,v){ localStorage.setItem(k,JSON.stringify(v)) },
+      remove(k){ localStorage.removeItem(k) }
+    };
+    async function apiRegister({name,email,password,role}){
+      let users=storage.get('users',[]);
+      if(users.some(u=>u.email===email)) throw new Error("Email already exists");
+      let u={id:Date.now(),name,email,password,role};
+      users.push(u); storage.set('users',users); return u;
+    }
+    async function apiLogin({email,password}){
+      let users=storage.get('users',[]);
+      let u=users.find(u=>u.email===email && u.password===password);
+      if(!u) throw new Error("Invalid credentials");
+      storage.set('session',{uid:u.id}); return u;
+    }
+    function currentUser(){
+      let s=storage.get('session',null);
+      if(!s) return null;
+      return storage.get('users',[]).find(u=>u.id===s.uid);
+    }
+
+    function showApp(){
+      document.getElementById("authScreen").style.display="none";
+      document.getElementById("appContent").style.display="block";
+    }
+
+    // Toggle forms
+    document.getElementById("showRegister").onclick=()=>{
+      document.getElementById("loginForm").classList.add("hidden");
+      document.getElementById("registerForm").classList.remove("hidden");
+      document.getElementById("authTitle").innerText="Register";
+    };
+    document.getElementById("showLogin").onclick=()=>{
+      document.getElementById("registerForm").classList.add("hidden");
+      document.getElementById("loginForm").classList.remove("hidden");
+      document.getElementById("authTitle").innerText="Login";
+    };
+
+    // Actions
+    document.getElementById("doRegister").onclick=async()=>{
+      try{
+        let name=document.getElementById("regName").value.trim();
+        let email=document.getElementById("regEmail").value.trim();
+        let pass=document.getElementById("regPassword").value;
+        let role=document.getElementById("regRole").value;
+        if(!name||!email||!pass) throw new Error("Fill all fields");
+        await apiRegister({name,email,password:pass,role});
+        alert("Registered! Now login.");
+        document.getElementById("showLogin").click();
+      }catch(e){alert(e.message)}
+    };
+    document.getElementById("doLogin").onclick=async()=>{
+      try{
+        let email=document.getElementById("loginEmail").value.trim();
+        let pass=document.getElementById("loginPassword").value;
+        let u=await apiLogin({email,password:pass});
+        alert("Welcome "+u.name);
+        showApp();
+      }catch(e){alert(e.message)}
+    };
+
+    // Auto-login if session exists
+    window.addEventListener("DOMContentLoaded",()=>{
+      if(currentUser()){ showApp(); }
+    });
+  </script>
+</body>
+</html>
