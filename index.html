@@ -2435,414 +2435,46 @@ body::before {
         this.init();
       }
 
-      async init() {
-        // Check if WebAuthn is supported
-        this.isSupported = await this.checkWebAuthnSupport();
-        this.loadStoredCredentials();
-        this.updateUI();
-      }
-
-      async checkWebAuthnSupport() {
-        if (!window.PublicKeyCredential) {
-          console.log('WebAuthn not supported');
-          return false;
-        }
-
-        try {
-          // Check if platform authenticator is available
-          const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-          if (!available) {
-            console.log('Platform authenticator not available');
-            return false;
-          }
-
-          // Check if conditional mediation is supported (for autofill)
-          if (PublicKeyCredential.isConditionalMediationAvailable) {
-            const conditionalSupported = await PublicKeyCredential.isConditionalMediationAvailable();
-            console.log('Conditional mediation supported:', conditionalSupported);
-          }
-
-          return true;
-        } catch (error) {
-          console.error('WebAuthn check failed:', error);
-          return false;
-        }
-      }
-
-      loadStoredCredentials() {
-        const storedCredential = localStorage.getItem('laam_webauthn_credential');
-        if (storedCredential) {
-          try {
-            const credential = JSON.parse(storedCredential);
-            this.credentialId = credential.id;
-            this.publicKey = credential.publicKey;
-            this.isSetup = true;
-            console.log('Loaded stored WebAuthn credential');
-          } catch (error) {
-            console.error('Failed to load stored credential:', error);
-          }
-        }
-      }
-
-      updateUI() {
-        const fingerprintSection = document.getElementById('fingerprintSection');
-        const statusElement = document.getElementById('fingerprintStatus');
-        const setupBtn = document.getElementById('setupFingerprintBtn');
-        const unlockBtn = document.getElementById('fingerprintUnlockBtn');
-
-        if (!this.isSupported) {
-          fingerprintSection.style.display = 'none';
-          return;
-        }
-
-        fingerprintSection.style.display = 'block';
-
-        if (this.isSetup) {
-          statusElement.textContent = 'Fingerprint unlock enabled';
-          statusElement.className = 'fingerprint-status enabled';
-          unlockBtn.disabled = false;
-          setupBtn.textContent = 'Reconfigure Fingerprint';
-        } else {
-          statusElement.textContent = 'Fingerprint unlock not set up';
-          statusElement.className = 'fingerprint-status disabled';
-          unlockBtn.disabled = true;
-          setupBtn.textContent = 'Set Up Fingerprint Unlock';
-        }
-      }
-
-      async register() {
-        if (!this.isSupported) {
-          throw new Error('Fingerprint authentication not supported on this device');
-        }
-
-        try {
-          // Generate a challenge (in production, this should come from your server)
-          const challenge = new Uint8Array(32);
-          crypto.getRandomValues(challenge);
-
-          const publicKeyCredentialCreationOptions = {
-            challenge: challenge,
-            rp: {
-              name: "Laam Wallet",
-              id: window.location.hostname || "localhost"
-            },
-            user: {
-              id: new Uint8Array(16),
-              name: "user@laam.wallet",
-              displayName: "Laam Wallet User"
-            },
-            pubKeyCredParams: [
-              {
-                alg: -7, // ES256
-                type: "public-key"
-              }
-            ],
-            authenticatorSelection: {
-              authenticatorAttachment: "platform", // Platform authenticator (fingerprint/face)
-              userVerification: "required"
-            },
-            timeout: 60000,
-            attestation: "direct"
-          };
-
-          this.showScanner('Register your fingerprint...', 'Follow your device prompts to register');
-
-          const credential = await navigator.credentials.create({
-            publicKey: publicKeyCredentialCreationOptions
-          });
-
-          this.hideScanner();
-
-          // Store the credential
-          const credentialData = {
-            id: this.arrayBufferToBase64(credential.rawId),
-            publicKey: this.arrayBufferToBase64(credential.response.getPublicKey()),
-            type: credential.type
-          };
-
-          localStorage.setItem('laam_webauthn_credential', JSON.stringify(credentialData));
-          this.credentialId = credentialData.id;
-          this.publicKey = credentialData.publicKey;
-          this.isSetup = true;
-
-          this.updateUI();
-          showSuccess('Fingerprint registered successfully!');
-
-          return credential;
-
-        } catch (error) {
-          this.hideScanner();
-          console.error('Registration failed:', error);
-          
-          if (error.name === 'NotAllowedError') {
-            throw new Error('Registration cancelled by user or timeout');
-          } else if (error.name === 'InvalidStateError') {
-            throw new Error('This device is already registered');
-          } else {
-            throw new Error('Failed to register fingerprint: ' + error.message);
-          }
-        }
-      }
-
-      // Bedel qaybta authenticate function
-async authenticate() {
+    async authenticate() {
   if (!this.isSupported || !this.isSetup) {
-    throw new Error('Fingerprint authentication not set up');
+    throw new Error('Fingerprint not set up on this device');
   }
 
   try {
+    const stored = JSON.parse(localStorage.getItem('laam_webauthn_credential'));
+    if (!stored) throw new Error('No fingerprint credentials stored');
+
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);
 
-    const publicKeyCredentialRequestOptions = {
+    const requestOptions = {
       challenge: challenge,
       allowCredentials: [{
-        id: this.base64ToArrayBuffer(this.credentialId),
-        type: "public-key"
+        type: "public-key",
+        id: this.base64ToArrayBuffer(stored.id)
       }],
       userVerification: "required",
       timeout: 60000
     };
 
-    this.showScanner('Verify your identity', 'Use your fingerprint to unlock', true);
-
-    const assertion = await navigator.credentials.get({
-      publicKey: publicKeyCredentialRequestOptions,
-      mediation: 'optional'
-    });
-
+    this.showScanner('Authenticate with fingerprint...', 'Follow your device prompts');
+    const assertion = await navigator.credentials.get({ publicKey: requestOptions });
     this.hideScanner();
 
-    // ✅ TUSAALE: Fududeynta verification (production-ka waxaad u baahan tahay server verification)
-    const isValid = await this.verifyAssertion(assertion);
-    
-    if (isValid) {
-      showSuccess('Fingerprint verified successfully!');
-      
-      // ✅ HALKAN: Diree unlock wallet-ka marka authentication guulaysato
-      try {
-        await unlockWalletWithBiometric();
-        return true;
-      } catch (unlockError) {
-        console.error('Unlock failed after auth:', unlockError);
-        throw new Error('Wallet unlock failed: ' + unlockError.message);
-      }
-    } else {
-      throw new Error('Fingerprint verification failed');
-    }
-
-  } catch (error) {
-    this.hideScanner();
-    console.error('Authentication failed:', error);
-    
-    if (error.name === 'NotAllowedError') {
-      throw new Error('Authentication cancelled by user or timeout');
-    } else {
-      throw new Error('Fingerprint authentication failed: ' + error.message);
-    }
-  }
-}
-      async verifyAssertion(assertion) {
-        // In a real implementation, you would send the assertion to your server for verification
-        // For this demo, we'll do basic client-side verification
-        
-        try {
-          // Check if we have a valid signature
-          const response = assertion.response;
-          if (response && response.signature) {
-            return true;
-          }
-          return false;
-        } catch (error) {
-          console.error('Assertion verification error:', error);
-          return false;
-        }
-      }
-
-      showScanner(title, subtitle, scanning = false) {
-        const scanner = document.getElementById('fingerprintScanner');
-        const scannerText = document.getElementById('scannerText');
-        const scannerSubtext = document.getElementById('scannerSubtext');
-        const scannerAnimation = document.getElementById('scannerAnimation');
-
-        scannerText.textContent = title;
-        scannerSubtext.textContent = subtitle;
-        
-        if (scanning) {
-          scannerAnimation.classList.add('scanning');
-        } else {
-          scannerAnimation.classList.remove('scanning');
-        }
-        
-        scanner.classList.add('active');
-      }
-
-      hideScanner() {
-        const scanner = document.getElementById('fingerprintScanner');
-        const scannerAnimation = document.getElementById('scannerAnimation');
-        
-        scanner.classList.remove('active');
-        scannerAnimation.classList.remove('scanning');
-      }
-
-      reset() {
-        localStorage.removeItem('laam_webauthn_credential');
-        this.credentialId = null;
-        this.publicKey = null;
-        this.isSetup = false;
-        this.updateUI();
-      }
-
-      // Utility methods
-      arrayBufferToBase64(buffer) {
-        const bytes = new Uint8Array(buffer);
-        let binary = '';
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i]);
-        }
-        return btoa(binary);
-      }
-
-      base64ToArrayBuffer(base64) {
-        const binary = atob(base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-        return bytes.buffer;
-      }
-    }
-
-    // Initialize fingerprint authentication
-    const fingerprintAuth = new FingerprintAuth();
-
-    // Event Listeners for Fingerprint Functionality
-    document.addEventListener('DOMContentLoaded', function() {
-      // Setup fingerprint button
-      document.getElementById('setupFingerprintBtn').addEventListener('click', async function() {
-        this.disabled = true;
-        this.textContent = 'Setting up...';
-        
-        try {
-          await fingerprintAuth.register();
-        } catch (error) {
-          showError(error.message);
-        } finally {
-          this.disabled = false;
-          this.textContent = fingerprintAuth.isSetup ? 'Reconfigure Fingerprint' : 'Set Up Fingerprint Unlock';
-        }
-      });
-
-      // Event listener-ka fingerprint button ku bedel
-document.getElementById('fingerprintUnlockBtn').addEventListener('click', async function() {
-  this.disabled = true;
-  this.textContent = 'Authenticating...';
-  
-  try {
-    await fingerprintAuth.authenticate();
-    // HADDA authentication-ku wuxuu isku xiraa unlockWalletWithBiometric()
-    console.log('Fingerprint authentication completed');
-  } catch (error) {
-    console.error('Fingerprint auth error:', error);
-    showError(error.message);
-    
-    // Reset button
-    this.disabled = false;
-    this.textContent = 'Fingerprint Unlock';
-  }
-});
-
-      // Cancel scan button
-      document.getElementById('cancelScan').addEventListener('click', function() {
-        fingerprintAuth.hideScanner();
-      });
-
-      // Auto-fill fingerprint on page load (if supported)
-      if (fingerprintAuth.isSupported && fingerprintAuth.isSetup) {
-        setTimeout(() => {
-          tryAutoFill();
-        }, 1000);
-      }
-    });
-
-    // Auto-fill functionality
-    async function tryAutoFill() {
-      if (!fingerprintAuth.isSupported || !fingerprintAuth.isSetup) return;
-
-      try {
-        const challenge = new Uint8Array(32);
-        crypto.getRandomValues(challenge);
-
-        const publicKeyCredentialRequestOptions = {
-          challenge: challenge,
-          allowCredentials: [{
-            id: fingerprintAuth.base64ToArrayBuffer(fingerprintAuth.credentialId),
-            type: "public-key"
-          }],
-          userVerification: "required",
-          timeout: 30000 // Shorter timeout for auto-fill
-        };
-
-        const assertion = await navigator.credentials.get({
-          publicKey: publicKeyCredentialRequestOptions,
-          mediation: 'conditional' // This enables auto-fill
-        });
-
-        if (assertion) {
-          const isValid = await fingerprintAuth.verifyAssertion(assertion);
-          if (isValid) {
-            showSuccess('Auto-unlocked with fingerprint!');
-            await unlockWalletWithBiometric();
-          }
-        }
-      } catch (error) {
-        // Auto-fill failed or was cancelled, this is normal
-        console.log('Auto-fill cancelled or failed:', error);
-      }
-    }
-
-    // Hubi in unlockWalletWithBiometric function-ku si fiican u shaqeyso
-async function unlockWalletWithBiometric() {
-  try {
-    console.log('Starting biometric unlock...');
-    
-    const encryptedKey = localStorage.getItem('laam_wallet_key');
-    if (!encryptedKey) {
-      throw new Error('No wallet found');
-    }
-
-    // Isticmaal FALLBACK KEY
-    const fallbackKey = localStorage.getItem('laam_wallet_biometric_fallback');
-    if (!fallbackKey) {
-      throw new Error('No biometric fallback found');
-    }
-
-    const publicKey = localStorage.getItem('laam_wallet_public');
-    const biometricKey = CryptoJS.SHA256(publicKey + "biometric_fallback").toString();
-    
-    // Isticmaal fallback key
-    const decryptedKey = decryptSecretKey(fallbackKey, biometricKey);
-    
-    if (!decryptedKey) {
-      throw new Error('Biometric decryption failed');
-    }
-    
-    currentKeypair = StellarSdk.Keypair.fromSecret(decryptedKey);
-    
-    await loadWallet();
-    watchDeposits();
-    
-    showSuccess('Wallet unlocked successfully with fingerprint!');
-    document.getElementById('authSection').classList.add('hidden');
+    // Haddii authentication guul tahay → unlock wallet
+    currentKeypair = null; // markaas wallet si caadi ah ayaa loo furi karaa
+    document.getElementById('unlockView').classList.add('hidden');
     document.getElementById('loggedInView').classList.remove('hidden');
-    
-    console.log('Biometric unlock completed successfully');
-    
+
+    showSuccess('Wallet unlocked with fingerprint!');
+    return assertion;
   } catch (error) {
-    console.error('Biometric unlock failed:', error);
-    throw error; // Ku sii tuur error-ka si event listener-ku u qabto
+    this.hideScanner();
+    throw new Error('Fingerprint authentication failed: ' + error.message);
   }
-}
+    }
+                    
+
     // Update wallet save to also create biometric-compatible version
     const originalImportAndSave = document.getElementById('importAndSaveBtn').onclick;
     document.getElementById('importAndSaveBtn').onclick = async function(e) {
